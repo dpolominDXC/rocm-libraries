@@ -29,6 +29,7 @@
 #include <miopen/kernel_build_params.hpp>
 #include <miopen/datatype.hpp>
 
+#include <sstream>
 #include <tuple>
 
 namespace miopen {

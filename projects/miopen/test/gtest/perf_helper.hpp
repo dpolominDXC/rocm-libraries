@@ -29,6 +29,9 @@
 #define NUM_PERF_RUNS 5
 #define NUM_WARMUP_RUNS 3
 
+#include <functional>
+#include <iostream>
+
 template <typename T>
 struct PerfHelper
 {
@@ -96,7 +99,7 @@ struct PerfHelper
         return {min_val, max_val, mean_val, median_val, sd_val};
     }
 
-    void writeStatsToCSV(const std::string& filename, std::string test_info)
+    void writeStatsToCSV(const std::string& filename, std::string const& test_info)
     {
         std::ofstream file;
 
@@ -119,7 +122,7 @@ struct PerfHelper
         // if the number of entries in the kernelTestStats vector is odd, throw an exception
         if(kernelTestStats.size() % 2 != 0)
         {
-            throw std::runtime_error("The number of entries in the kernelTestStats vector is odd");
+            throw std::runtime_error("The number of entries in the kernelTestStats vector is odd: " + std::to_string(kernelTestStats.size()));
         }
 
         // Calculate the half size of the kernelTestStats vector
@@ -158,21 +161,13 @@ struct PerfHelper
                   Args&&... args)
     {
         // Get kernels matching the kernel_name and network_config from the cache
-        auto&& kernels = handle.GetKernels(kernel_name, network_config);
+        auto kernels = handle.GetKernels(kernel_name, network_config);
         // Ensure we have at least one kernel
         assert(!kernels.empty());
         // Vector to hold the execution times
         std::vector<T> elapsedTime_ms;
-
-        if(handle.IsProfilingEnabled())
-        { // If profiling was enabled elsewhere, reset the kernel time
-            handle.ResetKernelTime();
-        }
-        else
-        {
-            handle.EnableProfiling(); // Enable profiling
-            handle.ResetKernelTime(); // for good measure?
-        }
+        handle.EnableProfiling(); // Enable profiling
+        handle.ResetKernelTime(); // for good measure?
         // Optionally ignore the first few runs to allow for warm-up
         for(size_t i = 0; i < NUM_PERF_RUNS + NUM_WARMUP_RUNS; i++)
         {
@@ -180,12 +175,28 @@ struct PerfHelper
             kernels.front()(std::forward<Args>(args)...);
             // Append the elapsed time to the vector
             if(i >= NUM_WARMUP_RUNS)
-                elapsedTime_ms.push_back(handle.GetKernelTime());
+                elapsedTime_ms.push_back(static_cast<T>(handle.GetKernelTime()));
             handle.ResetKernelTime();
         }
 
         handle.EnableProfiling(false); // Disable profiling
 
+        gpuStats = calcStats(elapsedTime_ms);
+        kernelTestStats.push_back({kernel_name,
+                                   std::get<0>(gpuStats),
+                                   std::get<1>(gpuStats),
+                                   std::get<2>(gpuStats),
+                                   std::get<3>(gpuStats),
+                                   std::get<4>(gpuStats)});
+    }
+
+
+    template <typename... Args>
+    void perfTest(std::function<void(std::vector<T>&)> callback,
+                  const std::string& kernel_name)
+    {
+        std::vector<T> elapsedTime_ms{};
+        callback(elapsedTime_ms);
         gpuStats = calcStats(elapsedTime_ms);
         kernelTestStats.push_back({kernel_name,
                                    std::get<0>(gpuStats),

@@ -31,6 +31,8 @@
 #include <miopen/float_equal.hpp>
 #include <miopen/datatype.hpp>
 
+#include <iostream>
+
 namespace miopen {
 
 namespace solver {
@@ -96,7 +98,7 @@ ConvSolution Op4dTensorLite::GetSolution([[maybe_unused]] const ExecutionContext
         Get4dParams(problem, true);
 
     auto&& [RD_BLCK, READ_TYPE] =
-        GetRDBLCKandREADTYPE(cTensorDesc.GetElementSize(), bTensorDesc.GetType());
+        GetRDBLCKandREADTYPEHIP(cTensorDesc.GetElementSize(), bTensorDesc.GetType());
 
     size_t total_work = std::max(cTensorDesc.GetElementSize() / RD_BLCK, size_t(1));
     constexpr int max_num_wg = 4096;

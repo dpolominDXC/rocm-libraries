@@ -189,20 +189,4 @@ struct PerfHelper
                                    std::get<3>(gpuStats),
                                    std::get<4>(gpuStats)});
     }
-
-
-    template <typename... Args>
-    void perfTest(std::function<void(std::vector<T>&)> callback,
-                  const std::string& kernel_name)
-    {
-        std::vector<T> elapsedTime_ms{};
-        callback(elapsedTime_ms);
-        gpuStats = calcStats(elapsedTime_ms);
-        kernelTestStats.push_back({kernel_name,
-                                   std::get<0>(gpuStats),
-                                   std::get<1>(gpuStats),
-                                   std::get<2>(gpuStats),
-                                   std::get<3>(gpuStats),
-                                   std::get<4>(gpuStats)});
-    }
 };

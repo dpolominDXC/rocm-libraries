@@ -31,8 +31,6 @@
 
 #include "miopen_cstdint.hpp"
 
-#define half4 float4 // There's no 4-pack half type in HIP: https://rocm.docs.amd.com/projects/HIP/en/docs-develop/reference/low_fp_types.html#float16-half-precision
-
 template <typename T>
 __device__ T miopenAdd(T a, T b)
 {
@@ -348,16 +346,6 @@ extern "C" __global__ void Op4dTensorGeneric(MIOPEN_TYPE* a,
 #endif
 
 #ifdef USE_4D_TENSOR_LITE
-// N - batch size
-// C - # of maps
-// H - map height
-// W - map width
-// TENS_LEN = (N*C*H*W);
-// RD_BLCK = (TENS_LEN%4==0) ? 4 : (TENS_LEN%3==0)? 3 : (TENS_LEN%2==0)? 2 : 1;
-// READ_TYPE = (RD_BLCK==4) ? "float4" : (RD_BLCK == 3) ? "float3" : (RD_BLC==2) ? "float2" :
-// "float";
-// local size = (256, 1, 1)
-// global size = ((TENS_LEN/RD_BLCK), 1, 1)
 extern "C" __global__ void Op4dTensorLite(const MIOPEN_TYPE* a,
                                           const MIOPEN_TYPE* b,
                                           MIOPEN_TYPE* c,

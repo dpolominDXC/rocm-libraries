@@ -58,6 +58,9 @@ namespace
 
 const std::string fakeId = {"testOCL"};
 
+constexpr int num_perf_runs = 16;
+constexpr int num_warmup_runs = 3;
+
 std::vector<std::vector<size_t>> tensorALensArr = {{32, 16, 8, 4, 4}, // tensor A
                                                    {16, 20, 16, 8},
                                                    {20, 16, 8},
@@ -109,7 +112,7 @@ struct PerfTestData
 
 std::vector<PerfTestData> GenPerfTensorDesc()
 {
-    // const size_t maxTotalSize = maxTotalSize * 1024ull * 1024ull / sizeof(T);
+    // Absolutely arbitrary number
     const size_t maxTotalSize = 256; // NOLINT
     std::vector<PerfTestData> result;
     result.reserve(maxTotalSize);
@@ -191,7 +194,7 @@ struct TestOp4dTensorLiteOCL final : solver::tensorOp::TensorOpSolver
             solver::tensorOp::Get4dParams(problem, true);
 
         auto&& [RD_BLCK, READ_TYPE] =
-            solver::tensorOp::GetRDBLCKandREADTYPE(cTensorDesc.GetElementSize(), bTensorDesc.GetType());
+            solver::tensorOp::GetRDBLCKandREADTYPEHIP(cTensorDesc.GetElementSize(), bTensorDesc.GetType());
 
         size_t total_work = std::max(cTensorDesc.GetElementSize() / RD_BLCK, size_t(1));
 
@@ -464,8 +467,8 @@ protected:
     {
         CreateTensors();
 
-        std::vector<T> tensorGPUOCLData = runOCL(true); 
-        std::vector<T> tensorGPUHIPData = runHIP(true);
+        [[maybe_unused]] std::vector<T> tensorGPUOCLData = runOCL(true); 
+        [[maybe_unused]] std::vector<T> tensorGPUHIPData = runHIP(true);
     }
 
     std::vector<T> runOCL(bool is_perf = false)
@@ -501,27 +504,24 @@ protected:
 
         if(is_perf)
         {
-            auto callback = [&algo, &solvers, &invoke_params, &handle, &problem](std::vector<T>& elapsedTime_ms) -> void
+            auto total_time = 0.f;
+            handle.EnableProfiling();
+            handle.ResetKernelTime();
+            for(auto i = 0; i < num_perf_runs + num_warmup_runs; i++)
             {
-                handle.EnableProfiling();
+                solvers.ExecutePrimitive(handle, problem, algo, invoke_params);
+                if(i >= num_warmup_runs)
+                    total_time += handle.GetKernelTime();
                 handle.ResetKernelTime();
-                for(auto i = 0; i < NUM_PERF_RUNS + NUM_WARMUP_RUNS; i++)
-                {
-                    solvers.ExecutePrimitive(handle, problem, algo, invoke_params);
-                    if(i >= NUM_WARMUP_RUNS)
-                        elapsedTime_ms.push_back(static_cast<T>(handle.GetKernelTime()));
-                    handle.ResetKernelTime();
-                }
-            };
+            }
 
-            ph.perfTest(callback, "Tensor4DOpsLiteSolver");
+            ocl_operations_time.push_back(
+                std::make_pair(ApproximateOperationsCount(miopen::float_equal(testCase.alphabeta[2], 0.f)), (total_time / num_perf_runs))
+            );
         }
         else
             solvers.ExecutePrimitive(handle, problem, algo, invoke_params);
-
-        auto result = handle.Read<T>(c_dev, tensorC.data.size());
-
-        return result;
+        return handle.Read<T>(c_dev, tensorC.data.size());
     }
 
     std::vector<T> runHIP(bool is_perf = false)
@@ -542,34 +542,34 @@ protected:
 
         if(is_perf)
         {
-            auto callback = [this, &handle, &testCase, &a_dev, &b_dev, &c_dev](std::vector<T>& elapsedTime_ms) -> void
+            handle.EnableProfiling();
+            handle.ResetKernelTime();
+            auto total_time = 0.f;
+            for(auto i = 0; i < num_perf_runs + num_warmup_runs; i++)
             {
-                handle.EnableProfiling();
+                miopen::OpTensor(handle,
+                        testCase.operation,
+                        &testCase.alphabeta[0],
+                        tensorA.desc,
+                        a_dev.get(),
+                        &testCase.alphabeta[1],
+                        tensorB.desc,
+                        b_dev.get(),
+                        &testCase.alphabeta[2],
+                        tensorC.desc,
+                        c_dev.get(),
+                        testCase.offsets[0],
+                        testCase.offsets[1],
+                        testCase.offsets[2],
+                        false);
+                if(i >= num_warmup_runs)
+                    total_time += handle.GetKernelTime();
                 handle.ResetKernelTime();
-                for(auto i = 0; i < NUM_PERF_RUNS + NUM_WARMUP_RUNS; i++)
-                {
-                    miopen::OpTensor(handle,
-                            testCase.operation,
-                            &testCase.alphabeta[0],
-                            tensorA.desc,
-                            a_dev.get(),
-                            &testCase.alphabeta[1],
-                            tensorB.desc,
-                            b_dev.get(),
-                            &testCase.alphabeta[2],
-                            tensorC.desc,
-                            c_dev.get(),
-                            testCase.offsets[0],
-                            testCase.offsets[1],
-                            testCase.offsets[2],
-                            false);
-                    if(i >= NUM_WARMUP_RUNS)
-                        elapsedTime_ms.push_back(static_cast<T>(handle.GetKernelTime()));
-                    handle.ResetKernelTime();
-                }
-            };
+            }
 
-            ph.perfTest(callback, "Tensor4DOpsLiteSolver");
+            hip_operations_time.push_back(
+                std::make_pair(ApproximateOperationsCount(miopen::float_equal(testCase.alphabeta[2], 0.f)), (total_time / num_perf_runs))
+            );
         }
         else
             miopen::OpTensor(handle,
@@ -587,41 +587,36 @@ protected:
                             testCase.offsets[1],
                             testCase.offsets[2],
                             false); // it does not verify non-standard behaviour
-        auto result = handle.Read<T>(c_dev, tensorC.data.size());
-
-        return result;
+        return handle.Read<T>(c_dev, tensorC.data.size());
     }
 
-    void WritePerfResults(std::string_view filename)
+    void WritePerfResults(std::string_view filename, const std::vector<std::pair<size_t, float>>& results)
+    {
+        using namespace std::string_view_literals;
+        std::ofstream f{filename.data(), std::ios::app};
+        if(miopen::fs::file_size(filename) == 0)
+        {
+            constexpr std::string_view header = "OperationsCount,Time\n"sv;
+            f << header;
+        }
+        for(auto const& result : results)
+        {
+            f << result.first << "," << result.second << "\n";
+        }
+    }
+
+    size_t ApproximateOperationsCount(bool use_beta)
     {
         const TestCase& testCase = GetParam();
-        std::stringstream stats{};
-        miopenDataType_t data_type = miopen_type<T>{};
-        stats << "_aclens_" << std::to_string(testCase.tensorlens_ac[0]) << "_" <<
-                    std::to_string(testCase.tensorlens_ac[1]) << "_" <<
-                    std::to_string(testCase.tensorlens_ac[2]) << "_" <<
-                    std::to_string(testCase.tensorlens_ac[3]) << "_acstrides_" <<
-                    std::to_string(testCase.stride_a[0]) << "_" <<
-                    std::to_string(testCase.stride_a[1]) << "_" <<
-                    std::to_string(testCase.stride_a[2]) << "_" <<
-                    std::to_string(testCase.stride_a[3]);
-        stats << "_blens_" + std::to_string(testCase.tensorlens_b[0]) << "_" <<
-                    std::to_string(testCase.tensorlens_b[1]) << "_" <<
-                    std::to_string(testCase.tensorlens_b[2]) << "_" <<
-                    std::to_string(testCase.tensorlens_b[3]) << "_bstrides_" <<
-                    std::to_string(testCase.stride_b[0]) << "_" <<
-                    std::to_string(testCase.stride_b[1]) << "_" <<
-                    std::to_string(testCase.stride_b[2]) << "_" <<
-                    std::to_string(testCase.stride_b[3]);
-        stats << "_alpha0_" << std::to_string(testCase.alphabeta[0]) << "_alpha1_" << std::to_string(testCase.alphabeta[1]) <<
-                    "_beta_" << std::to_string(testCase.alphabeta[2]) << "_" << miopen::GetDataType(data_type);
-
-        ph.writeStatsToCSV(std::string{filename}, stats.str());
+        auto total_elements_count = testCase.tensorlens_ac[0] * testCase.tensorlens_ac[1] * testCase.tensorlens_ac[2] * testCase.tensorlens_ac[3];
+        // each element is multiplied by alpha0 and alpha1 and may be multiplied by beta
+        return use_beta ? total_elements_count * 4 : total_elements_count * 3;
     }
 
     void TearDown() override
     {
-        WritePerfResults("test_4d_lite.csv");
+        WritePerfResults("test_4d_lite_ocl.csv", ocl_operations_time);
+        WritePerfResults("test_4d_lite_hip.csv", hip_operations_time);
     }
 
     void CompareResults(const std::vector<T>& tensorLHSData, const std::vector<T>& tensorRHSData)
@@ -649,11 +644,12 @@ protected:
     }
 
 private:
-    tensor<T> tensorA;
-    tensor<T> tensorB;
-    tensor<T> tensorC;
+    tensor<T> tensorA{};
+    tensor<T> tensorB{};
+    tensor<T> tensorC{};
 
-    PerfHelper<T> ph;
+    std::vector<std::pair<size_t, float>> ocl_operations_time{};
+    std::vector<std::pair<size_t, float>> hip_operations_time{};
 };
 
 template<typename T>

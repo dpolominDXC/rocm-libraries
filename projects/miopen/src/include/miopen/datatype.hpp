@@ -63,6 +63,33 @@ inline std::string GetDataType(miopenDataType_t type)
     }
 }
 
+inline std::string GetHipDataType(miopenDataType_t type)
+{
+    switch(type)
+    {
+    case miopenFloat:
+        return "float";
+    case miopenHalf:
+        return "float16";
+    case miopenBFloat16:
+        return "bfloat16";
+    case miopenInt8:
+        return "int8_t";
+    case miopenInt32:
+        return "int";
+    case miopenDouble:
+        return "double";
+    case miopenFloat8_fnuz:
+        return "float8_fnuz";
+    case miopenBFloat8_fnuz:
+        return "bfloat8_fnuz";
+    case miopenInt64:
+        return "int64";
+    default:
+        return "";
+    }
+}
+
 inline std::size_t get_data_size(miopenDataType_t type)
 {
     auto ret = std::size_t{};
@@ -163,9 +190,11 @@ inline KernelBuildParameters GetDataTypeKBP(miopenDataType_t type)
     return kbp;
 }
 
-inline std::string GetDataTypeKernelParams(miopenDataType_t type)
+inline std::string GetDataTypeKernelParams(miopenDataType_t type, bool for_hip = false)
 {
-    return " " + GetDataTypeKBP(type).GenerateFor(kbp::OpenCL{});
+    auto params = for_hip ? GetDataTypeKBP(type).GenerateFor(kbp::HIP{})
+                          : GetDataTypeKBP(type).GenerateFor(kbp::OpenCL{});
+    return " " + params;
 }
 
 } // namespace miopen

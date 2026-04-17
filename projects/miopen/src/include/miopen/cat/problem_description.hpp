@@ -47,7 +47,7 @@ struct ProblemDescription : ProblemDescriptionBase
                        int32_t dim_)
         : xDescs(xDescs_), yDesc(yDesc_), xCount(xCount_), dim(dim_)
     {
-        if((dim < 0) || (dim >= yDesc.GetLengths().size()))
+        if((dim < 0) || (static_cast<size_t>(dim) >= yDesc.GetLengths().size()))
         {
             MIOPEN_THROW(miopenStatusBadParm,
                          "CatForward: Dim is less than 0 or greater than max tensor dimension.");
@@ -74,9 +74,9 @@ struct ProblemDescription : ProblemDescriptionBase
                              "CatForward: Tensor dimension lengths do not match.");
             }
 
-            for(int j = 0; j < ydims.size(); j++)
+            for(size_t j = 0U; j < ydims.size(); j++)
             {
-                if((j != dim) && (ydims[j] != xdims[j]))
+                if((j != static_cast<size_t>(dim)) && (ydims[j] != xdims[j]))
                 {
                     MIOPEN_THROW(miopenStatusBadParm,
                                  "CatForward: Tensor dimension lengths do not match.");

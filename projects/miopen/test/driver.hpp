@@ -799,7 +799,7 @@ struct test_driver
             // Compute gpu
             if(time)
             {
-                for(size_t i = 0; i < warmup_iter; ++i)
+                for(auto i = 0; i < warmup_iter; ++i)
                 {
                     v.gpu(xs...);
                 }
@@ -811,7 +811,7 @@ struct test_driver
             if(time)
             {
                 float total_time = h.GetKernelTime();
-                for(size_t i = 1; i < time_iter; ++i)
+                for(auto i = 1; i < time_iter; ++i)
                 {
                     h.ResetKernelTime();
                     v.gpu(xs...);

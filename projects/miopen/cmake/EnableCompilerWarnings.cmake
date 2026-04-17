@@ -39,7 +39,6 @@ set(__default_cxx_compile_options
     -Wuninitialized
     -Wunreachable-code
     -Wno-ignored-qualifiers
-    -Wno-sign-compare
 )
 
 set(__clang_cxx_compile_options

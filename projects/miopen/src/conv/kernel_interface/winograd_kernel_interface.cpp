@@ -33,15 +33,19 @@ namespace miopen {
 
 namespace {
 
+/// Assign a value and check if assigned value is still equal to the original one
 template <class Tdst, class Tsrc>
-bool AssignAndCheck(Tdst& dst_v, Tsrc src_v) noexcept
+bool AssignAndCheck(Tdst& dst_v, Tsrc src_v) noexcept // TODO: [dpolomin] we need to rewrite this
 {
     static_assert(std::is_integral_v<Tsrc>);
     static_assert(std::is_integral_v<Tdst>);
 
-    dst_v = src_v;
+    dst_v = static_cast<Tdst>(src_v);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
     if(dst_v != src_v)
+#pragma GCC diagnostic pop
         return false;
 
     if constexpr(std::numeric_limits<Tsrc>::is_signed)

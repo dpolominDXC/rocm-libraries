@@ -75,7 +75,7 @@ struct ProblemDescription : ProblemDescriptionBase
 
     const TensorDescriptor& GetDYDesc() const { return dyDesc; }
     int32_t GetIndexCount() const { return indexCount; }
-    const TensorDescriptor& GetIndexDesc(int i) const
+    const TensorDescriptor& GetIndexDesc(size_t i) const
     {
         if(i >= indexCount)
         {
@@ -86,7 +86,7 @@ struct ProblemDescription : ProblemDescriptionBase
     const TensorDescriptor& GetDXDesc() const { return dxDesc; }
     const TensorDescriptor& GetErrorDesc() const { return errorDesc; }
     int32_t GetDimCount() const { return dimCount; }
-    int32_t GetDim(int i) const
+    int32_t GetDim(size_t i) const
     {
         if(i >= indexCount)
         {
@@ -95,7 +95,7 @@ struct ProblemDescription : ProblemDescriptionBase
         return dims[i];
     }
     int32_t GetSliceCount() const { return sliceCount; }
-    int32_t GetSlice(int i) const
+    int32_t GetSlice(size_t i) const
     {
         if(i >= sliceCount)
         {
@@ -110,7 +110,7 @@ struct ProblemDescription : ProblemDescriptionBase
         if(indexCount > 0)
         {
             auto firstlength = (*indexDescs)[0];
-            for(int32_t i = 1; i < indexCount; ++i)
+            for(auto i = 1U; i < indexCount; ++i)
             {
                 if(firstlength != (*indexDescs)[i])
                     MIOPEN_THROW(miopenStatusBadParm,

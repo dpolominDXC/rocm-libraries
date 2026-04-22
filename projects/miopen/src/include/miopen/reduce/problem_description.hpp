@@ -280,7 +280,7 @@ struct ProblemDescriptionCalculation : ProblemDescriptionBase
 
     bool IsNotLastDim() const
     {
-        if(dim == xDesc.GetLengths().size() - 1)
+        if(static_cast<size_t>(dim) == xDesc.GetLengths().size() - 1)
             return false;
         return true;
     }

@@ -303,7 +303,8 @@ struct MIOPEN_INTERNALS_EXPORT ProblemDescription : ProblemDescriptionBase,
 
     bool IsRightNormDim() const
     {
-        if((normalized_dim < 0) || (static_cast<size_t>(normalized_dim) > xDesc.GetLengths().size()))
+        if((normalized_dim < 0) ||
+           (static_cast<size_t>(normalized_dim) > xDesc.GetLengths().size()))
         {
 #if MIOPEN_BUILD_DEV || !MIOPEN_NDEBUG
             MIOPEN_THROW(

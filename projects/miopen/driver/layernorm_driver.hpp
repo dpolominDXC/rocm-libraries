@@ -176,7 +176,7 @@ int LayerNormDriver<T>::GetandSetData()
                     "normalized_dim out of range");
 
     std::vector<int> inner_len;
-    if(dim == in_len.size())
+    if(static_cast<size_t>(dim) == in_len.size())
         inner_len = {1};
     else
         inner_len = {in_len.begin() + dim, in_len.end()};
@@ -325,7 +325,7 @@ int LayerNormDriver<T>::AllocateBuffersAndCopy()
     dwhost   = tensor<T>(miopen::deref(dwDesc)).generate(genT0val);
     dbhost   = tensor<T>(miopen::deref(dbDesc)).generate(genT0val);
 
-    for(int i = 0; i < in_sz; i++)
+    for(auto i = 0ULL; i < in_sz; i++)
     {
         in[i] = prng::gen_A_to_B<T>(T0val, T1val);
         dy[i] = prng::gen_A_to_B<T>(Tminus1val, T1val);
@@ -336,7 +336,7 @@ int LayerNormDriver<T>::AllocateBuffersAndCopy()
     if(dy_dev->ToGPU(GetStream(), dy.data.data()) != 0)
         std::cerr << "Error copying (dy) to GPU, size: " << dy_dev->GetSize() << std::endl;
 
-    for(int i = 0; i < weight_sz; i++)
+    for(auto i = 0ULL; i < weight_sz; i++)
     {
         if(mode == MIOPEN_ELEMENTWISE_AFFINE)
             weight[i] = static_cast<T>(1);
@@ -347,7 +347,7 @@ int LayerNormDriver<T>::AllocateBuffersAndCopy()
     if(weight_dev->ToGPU(GetStream(), weight.data.data()) != 0)
         std::cerr << "Error copying (weight) to GPU, size: " << weight_dev->GetSize() << std::endl;
 
-    for(int i = 0; i < bias_sz; i++)
+    for(auto i = 0ULL; i < bias_sz; i++)
     {
         if(mode == MIOPEN_ELEMENTWISE_AFFINE)
             bias[i] = T0val;

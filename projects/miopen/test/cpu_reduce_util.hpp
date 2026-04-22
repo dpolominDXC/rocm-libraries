@@ -345,7 +345,7 @@ T get_offset_from_index(const std::vector<T>& strides, const std::vector<T>& ind
 
     assert(strides.size() == index.size());
 
-    for(int i = 0; i < index.size(); i++)
+    for(auto i = 0ULL; i < index.size(); i++)
         offset += strides[i] * index[i];
 
     return (offset);

@@ -91,7 +91,7 @@ struct FwdProblemDescription : ProblemDescriptionBase
         int32_t posOut = 0;
         for(auto i = 0U; i < inputDesc.GetLengths().size(); i++)
         {
-            if(i == dim)
+            if(i == static_cast<size_t>(dim))
             {
                 if(!keepDim)
                     continue;

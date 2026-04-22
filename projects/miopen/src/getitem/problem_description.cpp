@@ -51,7 +51,7 @@ NetworkConfig ProblemDescription::MakeNetworkConfig() const
     ss << "error_dtype" << error_dtype;
     ss << "indexCount" << indexCount;
 
-    for(int i = 0; i < indexCount; ++i)
+    for(auto i = 0U; i < indexCount; ++i)
     {
         if(i == 0)
             ss << "indexs_size";

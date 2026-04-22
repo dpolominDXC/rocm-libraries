@@ -269,7 +269,7 @@ bool PerformanceConfigConvOclBwdWrw2<N_BATCH_LOOPS>::IsValid(
     }
 
     // Check 2: read size
-    if(problem.GetInWidth() < read_size)
+    if(problem.GetInWidth() < static_cast<size_t>(read_size))
     {
         return false;
     }
@@ -285,7 +285,8 @@ bool PerformanceConfigConvOclBwdWrw2<N_BATCH_LOOPS>::IsValid(
     size_t n_output_channels_per_group = problem.GetInChannels() / problem.GetGroupCount();
 
     // Check 4: n_out_channels_per_tile
-    if(problem.GetGroupCount() > 1 && n_out_channels_per_tile > n_output_channels_per_group)
+    if(problem.GetGroupCount() > 1 &&
+       static_cast<size_t>(n_out_channels_per_tile) > n_output_channels_per_group)
     {
         return false;
     }
@@ -304,7 +305,7 @@ bool PerformanceConfigConvOclBwdWrw2<N_BATCH_LOOPS>::IsValid(
         return false;
     }
 
-    if(n_out_rows_in_lcl < problem.GetWeightsHeight())
+    if(static_cast<size_t>(n_out_rows_in_lcl) < problem.GetWeightsHeight())
     {
         return false;
     }

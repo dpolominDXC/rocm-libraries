@@ -873,7 +873,7 @@ void RNNDescriptor::RNNForwardMS(const Handle& handle,
     std::vector<std::vector<miopen::HipEventPtr>> layer_chunk_end_event;
 
     layer_chunk_end_event.resize(nLayers);
-    for(int layer_id = 0; layer_id < nLayers; layer_id++)
+    for(auto layer_id = 0ULL; layer_id < nLayers; layer_id++)
     {
         layer_chunk_end_event[layer_id].resize(chunks_cnt);
         for(int chunk_id = 0; chunk_id < chunks_cnt; chunk_id++)
@@ -975,7 +975,7 @@ void RNNDescriptor::RNNForwardMS(const Handle& handle,
 
         if(biasMode != 0u)
         {
-            for(int layer_id = 1; layer_id < nLayers; layer_id++)
+            for(auto layer_id = 1ULL; layer_id < nLayers; layer_id++)
                 call_bias_add(layer_id);
         }
 
@@ -1041,7 +1041,7 @@ void RNNDescriptor::RNNForwardMS(const Handle& handle,
             nothing_to_dispatch = true;
             int stream_it       = 0;
 
-            for(int cur_layer = 0; cur_layer < nLayers; cur_layer++)
+            for(auto cur_layer = 0ULL; cur_layer < nLayers; cur_layer++)
             {
                 const auto dispatch_stream = first_stream + stream_it;
                 if(try_dispatch_next_chunk(cur_layer, dispatch_stream, 1))
@@ -1086,7 +1086,7 @@ void RNNDescriptor::RNNForwardMS(const Handle& handle,
             call_next_chunk_compute(layer_id, stream_id);
         };
 
-        for(int layer_id = 0; layer_id < nLayers; layer_id++)
+        for(auto layer_id = 0ULL; layer_id < nLayers; layer_id++)
         {
             const auto main_stream_id = 1;
             ms_controller.ChangeActiveStream(main_stream_id);
@@ -1106,13 +1106,13 @@ void RNNDescriptor::RNNForwardMS(const Handle& handle,
 
             const int extra_layer_max_chunks =
                 start_chunk +
-                ((layer_id + 1 < nLayers - 1) ? (chunks_cnt - start_chunk) / 2 : chunks_cnt);
+                ((layer_id + 1ULL < nLayers - 1ULL) ? (chunks_cnt - start_chunk) / 2 : chunks_cnt);
 
             for(int chunk_id = start_chunk; chunk_id < chunks_cnt; chunk_id++)
             {
                 dispatch_next_chunk(layer_id, layer_stream_id[layer_id]);
 
-                int extra_compute_layer = layer_id + 1;
+                size_t extra_compute_layer = layer_id + 1ULL;
                 for(; extra_compute_layer < nLayers; extra_compute_layer++)
                 {
                     auto extra_chunk_id = layer_upd_cur_time[extra_compute_layer] / time_chunk_sz;
@@ -1507,7 +1507,7 @@ void RNNDescriptor::RNNForwardInferencePacked(const Handle& handle,
         activDesc = {miopenActivationTANH, 1, 1, 1};
     }
 
-    for(int li = 0; li < nLayers; li++)
+    for(auto li = 0ULL; li < nLayers; li++)
     {
         int hid_shift           = li * batch_n * hy_stride;
         int hx_shift            = li * hy_n * bi_stride;
@@ -1525,7 +1525,7 @@ void RNNDescriptor::RNNForwardInferencePacked(const Handle& handle,
                 x_desc     = miopen::TensorDescriptor(wDesc.GetType(), x_size, x_stride);
                 sp_desc    = miopen::TensorDescriptor(wDesc.GetType(), sp_size, sp_stride);
 
-                for(int gi = 0; gi < nHiddenTensorsPerLayer * bi; gi++)
+                for(auto gi = 0ULL; gi < nHiddenTensorsPerLayer * bi; gi++)
                 {
                     CopyTensor(handle, x_desc, x, sp_desc, workSpace, 0, gi * hy_h);
                     // Update time
@@ -2941,7 +2941,7 @@ void RNNDescriptor::RNNForwardTrainingPackedTensors(
         activDesc = {miopenActivationTANH, 1, 1, 1};
     }
 
-    for(int li = 0; li < nLayers; li++)
+    for(auto li = 0ULL; li < nLayers; li++)
     {
         int hid_shift           = li * batch_n * hy_stride;
         int hx_shift            = li * hy_n * bi_stride;
@@ -2959,7 +2959,7 @@ void RNNDescriptor::RNNForwardTrainingPackedTensors(
                 x_desc     = miopen::TensorDescriptor(wDesc.GetType(), x_size, x_stride);
                 sp_desc    = miopen::TensorDescriptor(wDesc.GetType(), sp_size, sp_stride);
 
-                for(int gi = 0; gi < nHiddenTensorsPerLayer * bi; gi++)
+                for(auto gi = 0ULL; gi < nHiddenTensorsPerLayer * bi; gi++)
                 {
                     CopyTensor(handle, x_desc, x, sp_desc, reserveSpace, 0, gi * hy_h);
                     // Update time
@@ -4463,7 +4463,7 @@ void RNNDescriptor::RNNBackwardDataPackedTensors(
         int weitime_shift = in_h * wei_stride + li * (bi * hy_h + hy_h) * wei_stride;
 
         // feedback from output
-        if(li == nLayers - 1)
+        if(li == static_cast<int>(nLayers) - 1)
         {
             y_size[1]  = batch_n;
             y_size[2]  = out_h;
@@ -5719,7 +5719,7 @@ void RNNDescriptor::RNNBackwardDataPackedTensors(
 
         CopyTensor(handle, sp_desc, workSpace, x_desc, dx, 0, 0, true);
         profileRNNkernels(handle, 1, ctime);
-        for(int gi = 1; gi < nHiddenTensorsPerLayer * bi; gi++)
+        for(auto gi = 1ULL; gi < nHiddenTensorsPerLayer * bi; gi++)
         {
             OpTensor(handle,
                      miopenTensorOpAdd,
@@ -5736,7 +5736,10 @@ void RNNDescriptor::RNNBackwardDataPackedTensors(
                      0,
                      0);
             // Update time
-            profileRNNkernels(handle, (gi == nHiddenTensorsPerLayer * bi - 1) ? 2 : 1, ctime);
+            profileRNNkernels(handle,
+                              (gi == nHiddenTensorsPerLayer * static_cast<size_t>(bi) - 1ULL) ? 2
+                                                                                              : 1,
+                              ctime);
         }
     }
     else
@@ -6086,7 +6089,7 @@ void RNNDescriptor::RNNBackwardWeightsPackedTensors(
         break;
     }
 
-    for(int li = 0; li < nLayers; li++)
+    for(auto li = 0ULL; li < nLayers; li++)
     {
         int hid_shift = li * batch_n * hy_stride;
         int wei_shift = (in_h + hy_h) * wei_stride + (li - 1) * (bi * hy_h + hy_h) * wei_stride;
@@ -6405,7 +6408,7 @@ void RNNDescriptor::RNNBackwardWeightsPackedTensors(
                     checkGemmStatusAndLog(gemm_status);
 
                     // Update time
-                    if(li == nLayers - 1 && ri == bi - 1 && seqLen == 1)
+                    if(li == nLayers - 1ULL && ri == bi - 1 && seqLen == 1)
                         profileRNNkernels(handle, 2, ctime);
                     else
                         profileRNNkernels(handle, 1, ctime);
@@ -6490,7 +6493,7 @@ void RNNDescriptor::RNNBackwardWeightsPackedTensors(
                     checkGemmStatusAndLog(gemm_status);
 
                     // Update time
-                    if(li == nLayers - 1 && ri == bi - 1)
+                    if(li == nLayers - 1ULL && ri == bi - 1)
                         profileRNNkernels(handle, 2, ctime);
                     else
                         profileRNNkernels(handle, 1, ctime);
@@ -6557,7 +6560,7 @@ void RNNDescriptor::RNNBackwardWeightsPackedTensors(
 
                                 checkGemmStatusAndLog(gemm_status);
                                 // Update time
-                                if(li == nLayers - 1 && ti == seqLen - 1 && ri == bi - 1)
+                                if(li == nLayers - 1ULL && ti == seqLen - 1 && ri == bi - 1)
                                     profileRNNkernels(handle, 2, ctime);
                                 else
                                     profileRNNkernels(handle, 1, ctime);
@@ -6638,7 +6641,7 @@ void RNNDescriptor::RNNBackwardWeightsPackedTensors(
 
                                 checkGemmStatusAndLog(gemm_status);
                                 // Update time
-                                if(li == nLayers - 1 && ti == seqLen - 1 && ri == bi - 1)
+                                if(li == nLayers - 1ULL && ti == seqLen - 1 && ri == bi - 1)
                                     profileRNNkernels(handle, 2, ctime);
                                 else
                                     profileRNNkernels(handle, 1, ctime);

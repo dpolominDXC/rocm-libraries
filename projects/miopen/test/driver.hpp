@@ -650,7 +650,7 @@ struct test_driver
                     std::cout << "Gpu data is all zeros" << std::endl;
 
                 auto idx = miopen::mismatch_idx(out_cpu, out_gpu, miopen::float_equal);
-                if(idx < miopen::range_distance(out_cpu))
+                if(idx < static_cast<size_t>(miopen::range_distance(out_cpu)))
                 {
                     std::cout << "Mismatch at " << idx << ": " << out_cpu[idx]
                               << " != " << out_gpu[idx] << std::endl;
@@ -922,7 +922,7 @@ struct test_driver
         return verify_impl(
             [&](auto&, auto&& cpu, auto&& gpu) {
                 auto idx = miopen::mismatch_idx(cpu, gpu, miopen::float_equal);
-                return idx >= miopen::range_distance(cpu);
+                return idx >= static_cast<size_t>(miopen::range_distance(cpu));
             },
             v,
             xs...);

@@ -799,7 +799,7 @@ struct test_driver
             // Compute gpu
             if(time)
             {
-                for(auto i = 0; i < warmup_iter; ++i)
+                for(int i = 0; i < warmup_iter; ++i)
                 {
                     v.gpu(xs...);
                 }

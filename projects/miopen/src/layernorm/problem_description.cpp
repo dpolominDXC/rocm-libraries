@@ -48,7 +48,7 @@ size_t GetStride(const TensorDescriptor& xDesc, int32_t normalized_dim)
 size_t GetOuterSize(const TensorDescriptor& xDesc, int32_t normalized_dim, size_t stride)
 {
     size_t outer_size = 1;
-    for(size_t i = 0; i < static_cast<size_t>(normalized_dim); ++i)
+    for(size_t i = 0ULL; i < static_cast<size_t>(normalized_dim); ++i)
     {
         if(!(stride > 1 && i == 1))
         {

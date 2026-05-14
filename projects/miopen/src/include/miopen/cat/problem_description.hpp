@@ -74,7 +74,7 @@ struct ProblemDescription : ProblemDescriptionBase
                              "CatForward: Tensor dimension lengths do not match.");
             }
 
-            for(size_t j = 0U; j < ydims.size(); j++)
+            for(size_t j = 0ULL; j < ydims.size(); j++)
             {
                 if((j != static_cast<size_t>(dim)) && (ydims[j] != xdims[j]))
                 {

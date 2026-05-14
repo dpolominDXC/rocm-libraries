@@ -110,7 +110,7 @@ struct ProblemDescription : ProblemDescriptionBase
         if(indexCount > 0)
         {
             auto firstlength = (*indexDescs)[0];
-            for(auto i = 1U; i < indexCount; ++i)
+            for(size_t i = 1U; i < indexCount; ++i)
             {
                 if(firstlength != (*indexDescs)[i])
                     MIOPEN_THROW(miopenStatusBadParm,

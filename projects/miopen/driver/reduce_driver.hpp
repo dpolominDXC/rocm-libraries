@@ -158,7 +158,7 @@ int ReduceDriver<Tgpu, Tref>::GetandSetData()
 
     this->dimsToReduce = toReduceDims;
 
-    for(auto i = 0U; i < inLengths.size(); i++)
+    for(size_t i = 0ULL; i < inLengths.size(); i++)
         if(inLengths[i] == outLengths[i])
             invariantDims.push_back(i);
 
@@ -290,7 +290,7 @@ int ReduceDriver<Tgpu, Tref>::AllocateBuffersAndCopy()
 
     if(!rdResult)
     {
-        for(auto i = 0U; i < in_nelem; i++)
+        for(size_t i = 0ULL; i < in_nelem; i++)
         {
             in[i] = prng::gen_canonical<Tgpu>();
         };

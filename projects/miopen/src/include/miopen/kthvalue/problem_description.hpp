@@ -89,7 +89,7 @@ struct FwdProblemDescription : ProblemDescriptionBase
         }
 
         int32_t posOut = 0;
-        for(auto i = 0U; i < inputDesc.GetLengths().size(); i++)
+        for(size_t i = 0ULL; i < inputDesc.GetLengths().size(); i++)
         {
             if(i == static_cast<size_t>(dim))
             {

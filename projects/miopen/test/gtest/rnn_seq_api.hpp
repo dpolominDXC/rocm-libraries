@@ -258,7 +258,7 @@ struct verify_rnn_api_base
 
         auto& samplesLen = input.desc.GetSequenceLengthsVector();
         ss << " --seq_len_array ";
-        for(auto i = 0ULL; i < inLens[0]; i++)
+        for(size_t i = 0ULL; i < inLens[0]; i++)
         {
             if(i < inLens[0] - 1ULL)
             {
